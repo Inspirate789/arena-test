@@ -2,7 +2,7 @@ package arena_test
 
 import (
 	"arena"
-	"runtime"
+	"runtime/debug"
 	"testing"
 )
 
@@ -31,9 +31,14 @@ func NewDataGC() *Data {
 func BenchmarkNoGC(b *testing.B) {
 	mem := arena.NewArena()
 	var data *Data
+	var gcStats debug.GCStats
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		data = NewDataNoGC(mem)
+		b.StopTimer()
+		debug.ReadGCStats(&gcStats)
+		b.Log(gcStats.NumGC, gcStats.PauseTotal)
+		b.StartTimer()
 	}
 	b.StopTimer()
 	_ = data
@@ -43,12 +48,17 @@ func BenchmarkNoGC(b *testing.B) {
 
 func BenchmarkGC(b *testing.B) {
 	var data *Data
+	var gcStats debug.GCStats
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		data = NewDataGC()
+		b.StopTimer()
+		debug.ReadGCStats(&gcStats)
+		b.Log(gcStats.NumGC, gcStats.PauseTotal)
+		b.StartTimer()
 	}
 	b.StopTimer()
 	_ = data
 	b.StartTimer()
-	runtime.GC()
+	// runtime.GC()
 }
